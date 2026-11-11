@@ -12,22 +12,24 @@
 
 ## 预览
 
+<img src="assets/screenshots/chat.png" alt="对话界面" width="100%">
+
+<p align="center"><sub><b>对话</b> · 流式回复，情感标签同时驱动角色表情与肢体姿态</sub></p>
+
 <table>
   <tr>
-    <td align="center" width="33%">
+    <td align="center" width="50%">
       <img src="assets/screenshots/idle.png" alt="待机界面"><br/>
       <sub><b>待机</b> · 半透明悬浮窗，角色常驻桌面</sub>
     </td>
-    <td align="center" width="33%">
-      <img src="assets/screenshots/chat.png" alt="对话界面"><br/>
-      <sub><b>对话</b> · 流式回复，情感驱动表情与姿态</sub>
-    </td>
-    <td align="center" width="33%">
+    <td align="center" width="50%">
       <img src="assets/screenshots/menu.png" alt="圆环菜单"><br/>
       <sub><b>圆环菜单</b> · 右键唤出六项快捷功能</sub>
     </td>
   </tr>
 </table>
+
+> 截图为实机渲染；对话文案为演示内容，实际回复由所接入的模型生成。
 
 ---
 
