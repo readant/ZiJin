@@ -6,7 +6,10 @@
 
 ![Python](https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white)
 ![PyQt6](https://img.shields.io/badge/PyQt6-6.6+-41CD52?logo=qt&logoColor=white)
+![Version](https://img.shields.io/badge/version-0.2.0-orange)
 ![License](https://img.shields.io/badge/License-MIT-yellow.svg)
+
+> **状态：早期开发（0.2.0）**。核心能力已可用，但仍有若干待接线项，详见 [已知限制](#已知限制) 与 [CHANGELOG](CHANGELOG.md)。
 
 ---
 
@@ -221,6 +224,7 @@ pytest -m integration
 
 | 文档 | 内容 |
 |---|---|
+| [CHANGELOG.md](CHANGELOG.md) | 版本变更记录 |
 | [DEVELOPER.md](DEVELOPER.md) | 5 分钟上手、架构图解、扩展指南、排障手册 |
 | [docs/1-项目概览.md](docs/1-项目概览.md) | 定位、技术栈、入口、配置 |
 | [docs/2-架构与模块详解.md](docs/2-架构与模块详解.md) | 架构风格、依赖关系、数据模型 |
