@@ -1,0 +1,45 @@
+# === Python ===
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+env/
+
+# === 测试与静态检查 ===
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+_audit_result.txt
+
+# === 运行时数据（含隐私内容，绝不入库） ===
+data/chroma_db/
+data/user_profile.json
+data/memo.json
+data/todo.json
+data/audit.jsonl
+data/audit.jsonl.*
+data/chat_history.json
+data/logs/
+data/settings.json
+
+# === 工具与编辑器 ===
+.workbuddy/
+.idea/
+.vscode/
+*.log
+
+# === 环境与密钥 ===
+.env
+.env.*
+*.pem
+
+# === Live2D 高清纹理（体积过大，需自行生成） ===
+models/Hiyori.2048/

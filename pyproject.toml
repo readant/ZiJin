@@ -1,0 +1,15 @@
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+# 默认只跑单元测试；集成用例需真实 LLM 服务，用 `pytest -m integration` 显式开启
+addopts = "-v --tb=short -m 'not integration'"
+markers = [
+    "integration: 依赖真实 LLM 服务或联网下载模型，默认跳过",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+]
