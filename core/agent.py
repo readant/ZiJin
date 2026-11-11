@@ -129,12 +129,15 @@ class Agent:
 
         Yields:
             dict: {
-                "type": "text" | "emotion" | "tool_call" | "tool_result" | "done",
+                "type": "text" | "emotion" | "tool_call" | "tool_result"
+                        | "round_start" | "done",
                 "content": "内容",
                 "emotion": "情感标签",  # 仅当type="emotion"时
                 "tool_calls": [...],    # 仅当type="tool_call"时
                 "tool_results": [...]   # 仅当type="tool_result"时
             }
+
+        其中 round_start 表示进入新的工具轮，界面应清空上一轮的过渡文本。
         """
         self.memory.add_conversation("user", user_input)
         chat_history.add_message("user", user_input)
@@ -152,6 +155,11 @@ class Agent:
         for round_i in range(MAX_TOOL_ROUNDS):
             full_content = ""
             tool_calls = None
+
+            if round_i > 0:
+                # 新一轮开始：通知界面清空上一轮的过渡文本，
+                # 否则「好的，我查一下」会与最终答案拼接在同一条气泡里
+                yield {"type": "round_start", "round": round_i}
 
             for chunk in self.llm.chat_stream(messages, tools=tools):
                 if chunk["done"]:

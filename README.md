@@ -6,10 +6,10 @@
 
 ![Python](https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white)
 ![PyQt6](https://img.shields.io/badge/PyQt6-6.6+-41CD52?logo=qt&logoColor=white)
-![Version](https://img.shields.io/badge/version-0.2.1-orange)
+![Version](https://img.shields.io/badge/version-0.3.0-orange)
 ![License](https://img.shields.io/badge/License-MIT-yellow.svg)
 
-> **状态：早期开发（0.2.1）**。核心能力已可用，但仍有若干待接线项，详见 [已知限制](#已知限制) 与 [CHANGELOG](CHANGELOG.md)。
+> **状态：早期开发（0.3.0）**。核心能力已可用，但仍有若干待接线项，详见 [已知限制](#已知限制) 与 [CHANGELOG](CHANGELOG.md)。
 
 ---
 
@@ -59,7 +59,12 @@ LLM 按约定在回复首部输出标签，程序解析后同时驱动气泡配�
 | 长期记忆 | ChromaDB 向量检索 + 重要性打分 + 去重 | 跨会话回忆 |
 | 用户画像 | JSON 持久化 | 姓名、偏好、事实 |
 
-长期记忆采用**后台预热 + 未就绪降级**：嵌入模型不可用时自动跳过向量操作，绝不阻塞对话（详见[已知限制](#已知限制)）。
+长期记忆的嵌入后端可配置（`EMBEDDING_BACKEND`）：
+
+- `auto`（默认）— 优先使用本地 Ollama 的 `nomic-embed-text`，不可用时回退 chromadb 内置 ONNX
+- `ollama` / `onnx` — 强制指定后端
+
+采用**后台预热 + 有界等待 + 未就绪降级**：预热通常 1 秒内完成，首条消息最多等待 3 秒；模型不可用时跳过向量操作，绝不阻塞对话。
 
 ### 桌面工具（26 个）
 
@@ -181,6 +186,8 @@ ZiJin/
 | `OPENAI_API_KEY` | 空 | 使用 `openai_api` 时必填 |
 | `OPENAI_BASE_URL` | `https://api.openai.com/v1` | 兼容接口地址 |
 | `SHORT_MEMORY_ROUNDS` | `10` | 短期记忆保留轮数 |
+| `EMBEDDING_BACKEND` | `auto` | 嵌入后端：`auto` / `ollama` / `onnx` |
+| `OLLAMA_EMBED_MODEL` | `nomic-embed-text` | 使用 Ollama 嵌入时的模型名 |
 
 启动时 `validate()` 会校验非法组合并直接报错退出。
 
@@ -202,7 +209,7 @@ pytest -m integration
 
 ## 已知限制
 
-- **嵌入模型需联网首次下载**：离线环境下长期记忆降级为「不写不检索」，短期记忆与对话不受影响。
+- **切换嵌入后端需清空记忆**：向量维度随模型不同（`nomic-embed-text` 为 768 维，ONNX 为 384 维），已有记忆不会被自动迁移。切换前请先清空长期记忆。
 - **设置面板尚未生效**：`ui/widgets/settings_widget.py` 写入 `data/settings.json`，但配置中心仍只读环境变量，改动需重启并以环境变量注入。
 - **Live2D SDK 限制**：Python 版不支持 `HitTest` 与 `SetFocus`，视线追踪需通过 `LAppModel` 实现。
 - **仅 Windows 验证**：`pycaw`、`pyautogui`、DPI 设置均为 Windows 实现。

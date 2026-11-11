@@ -25,6 +25,13 @@ CHROMA_DB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data"
 CHROMA_COLLECTION = _env("CHROMA_COLLECTION", "conversation_history")
 USER_PROFILE_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "user_profile.json")
 
+# === 嵌入后端 ===
+# auto   : 优先用本地 Ollama 嵌入模型，不可用时回退 chromadb 内置 ONNX
+# ollama : 强制使用 Ollama，不可用则直接报错
+# onnx   : 强制使用内置 ONNX（首次使用需联网下载约 79MB）
+EMBEDDING_BACKEND = _env("EMBEDDING_BACKEND", "auto")
+OLLAMA_EMBED_MODEL = _env("OLLAMA_EMBED_MODEL", "nomic-embed-text")
+
 # === 情感分析配置 ===
 EMOTION_TAGS = ["happy", "sad", "angry", "surprised", "neutral", "thinking", "shy", "excited", "gentle", "melancholy"]
 

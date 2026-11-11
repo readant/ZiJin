@@ -318,7 +318,13 @@ class MainWindow(QMainWindow):
         """处理流式输出块"""
         chunk_type = chunk.get("type")
 
-        if chunk_type == "text":
+        if chunk_type == "round_start":
+            # 进入新的工具轮：丢弃上一轮的过渡文本，重新累积最终答案
+            self._typing_started = False
+            self._accumulated_text = ""
+            self.bubble.show_typing()
+
+        elif chunk_type == "text":
             content = chunk.get("content", "")
             if content:
                 if not self._typing_started:

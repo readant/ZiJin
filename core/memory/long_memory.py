@@ -7,7 +7,10 @@ import threading
 from datetime import datetime
 from typing import Optional
 import chromadb
-from config.settings import CHROMA_DB_PATH, CHROMA_COLLECTION
+from config.settings import (
+    CHROMA_DB_PATH, CHROMA_COLLECTION,
+    EMBEDDING_BACKEND, OLLAMA_EMBED_MODEL, OLLAMA_BASE_URL,
+)
 from core.log import get_logger
 
 log = get_logger("long_memory")
@@ -36,14 +39,8 @@ class LongMemory:
         self.client = chromadb.PersistentClient(path=CHROMA_DB_PATH)
         self._dedup_threshold = dedup_threshold
         self._lock = threading.Lock()
-        
-        try:
-            self.collection = self.client.get_collection(CHROMA_COLLECTION)
-        except Exception:
-            self.collection = self.client.create_collection(
-                name=CHROMA_COLLECTION,
-                metadata={"hnsw:space": "cosine"}
-            )
+
+        self.collection = self._open_collection()
         
         self._count_cache: Optional[int] = None
         self._cache_time = 0.0
@@ -55,7 +52,82 @@ class LongMemory:
         # 因此这里改为「后台预热 + 未就绪降级」，绝不让下载阻塞对话路径。
         self._embed_ready = False
         self._embed_error = ""
+        self._embed_event = threading.Event()
         self._start_warmup()
+
+    def _build_embedding_function(self):
+        """按配置构建嵌入函数。
+
+        auto 模式下优先使用本地 Ollama 嵌入模型：chromadb 内置 ONNX 模型首次
+        使用需联网下载约 79MB，弱网环境下几乎必然失败；而本地若已装 Ollama，
+        直接调用现成模型既省下载也可离线。
+        """
+        if EMBEDDING_BACKEND == "onnx":
+            return None
+
+        try:
+            from chromadb.utils import embedding_functions as ef_mod
+            ef_fn = ef_mod.OllamaEmbeddingFunction(
+                url=OLLAMA_BASE_URL,
+                model_name=OLLAMA_EMBED_MODEL,
+            )
+            probe = ef_fn(["probe"])
+            if probe and len(probe[0]) > 0:
+                log.info("嵌入后端: Ollama / %s（%d 维）",
+                         OLLAMA_EMBED_MODEL, len(probe[0]))
+                return ef_fn
+        except Exception as e:
+            if EMBEDDING_BACKEND == "ollama":
+                raise
+            log.warning("Ollama 嵌入不可用，回退内置 ONNX: %s", e)
+        return None
+
+    def _open_collection(self):
+        """打开（必要时创建）集合，保证嵌入后端与已有数据不冲突"""
+        meta = {"hnsw:space": "cosine"}
+        ef_fn = self._build_embedding_function()
+
+        existing = None
+        try:
+            # 必须把嵌入函数一并传入：若省略，chromadb 会去加载集合持久化的
+            # 默认 ONNX 模型，在弱网环境下必然卡在下载
+            if ef_fn is not None:
+                existing = self.client.get_collection(
+                    CHROMA_COLLECTION, embedding_function=ef_fn)
+            else:
+                existing = self.client.get_collection(CHROMA_COLLECTION)
+        except Exception:
+            existing = None
+
+        # 空集合允许按新后端重建，避免与旧向量维度不一致
+        if existing is not None and ef_fn is not None and existing.count() == 0:
+            try:
+                self.client.delete_collection(CHROMA_COLLECTION)
+                log.info("集合为空，按新嵌入后端重建")
+            except Exception:
+                pass
+            existing = None
+
+        if existing is not None:
+            if ef_fn is not None:
+                existing_ef = (existing.configuration or {}).get("embedding_function")
+                existing_name = type(existing_ef).__name__ if existing_ef is not None else ""
+                wanted_name = type(ef_fn).__name__
+                if existing_name and existing_name != wanted_name:
+                    log.warning(
+                        "集合由 %s 建立，与当前配置 %s 不一致；"
+                        "已有 %d 条记忆不会被自动迁移，如需切换请先清空长期记忆",
+                        existing_name, wanted_name, existing.count())
+                else:
+                    log.debug("沿用集合已有嵌入配置: %s", existing_name or "默认")
+            return existing
+
+        if ef_fn is not None:
+            return self.client.create_collection(
+                name=CHROMA_COLLECTION, metadata=meta,
+                embedding_function=ef_fn)
+        return self.client.create_collection(
+            name=CHROMA_COLLECTION, metadata=meta)
 
     def _start_warmup(self):
         """后台线程预热嵌入模型，不阻塞构造与首次对话"""
@@ -93,8 +165,19 @@ class LongMemory:
                 self._embed_error,
             )
 
-    def _embed_available(self) -> bool:
-        """嵌入模型是否可用于向量操作"""
+        finally:
+            self._embed_event.set()
+
+    def _embed_available(self, timeout: float = 0.0) -> bool:
+        """嵌入模型是否可用于向量操作。
+
+        timeout > 0 时最多等待这么久：预热通常在数百毫秒内完成，
+        给首条消息一个有界等待，避免它因「还没就绪」被直接丢弃。
+        """
+        if self._embed_ready:
+            return True
+        if timeout > 0:
+            self._embed_event.wait(timeout)
         return self._embed_ready
 
     def _get_count(self) -> int:
@@ -151,7 +234,7 @@ class LongMemory:
         if not text or not text.strip():
             return ""
 
-        if not self._embed_available():
+        if not self._embed_available(timeout=3.0):
             log.debug("嵌入模型未就绪，跳过长期记忆写入: %s", text[:30])
             return ""
 
@@ -190,7 +273,7 @@ class LongMemory:
         if not items:
             return 0
 
-        if not self._embed_available():
+        if not self._embed_available(timeout=3.0):
             log.debug("嵌入模型未就绪，跳过批量写入（%d 条）", len(items))
             return 0
 
@@ -244,7 +327,7 @@ class LongMemory:
         if count == 0:
             return []
 
-        if not self._embed_available():
+        if not self._embed_available(timeout=3.0):
             log.debug("嵌入模型未就绪，跳过向量检索: %s", query[:30])
             return []
 
