@@ -18,12 +18,12 @@ class RadialMenu(QWidget):
 
     # (name, label, icon_char, colors: (center, edge))
     ITEMS = [
-        ("chat",     "对话",   "C", (QColor(186, 85, 211),  QColor(140, 50, 180))),
-        ("memo",     "备忘录", "M", (QColor(100, 180, 255), QColor(60, 130, 220))),
-        ("todo",     "待办",   "T", (QColor(255, 180, 80),  QColor(220, 140, 40))),
-        ("memory",   "记忆",   "R", (QColor(80, 200, 120),  QColor(40, 160, 80))),
-        ("settings", "设置",   "S", (QColor(160, 160, 180), QColor(120, 120, 140))),
-        ("exit",     "退出",   "X", (QColor(255, 100, 100), QColor(200, 60, 60))),
+        ("chat",     "对话",   "C", (QColor(155, 123, 212), QColor(110, 82, 168))),
+        ("memo",     "备忘录", "M", (QColor(123, 167, 217), QColor(78, 127, 181))),
+        ("todo",     "待办",   "T", (QColor(217, 184, 123), QColor(176, 143, 85))),
+        ("memory",   "记忆",   "R", (QColor(123, 196, 160), QColor(78, 153, 120))),
+        ("settings", "设置",   "S", (QColor(160, 160, 176), QColor(117, 117, 133))),
+        ("exit",     "退出",   "X", (QColor(201, 130, 140), QColor(160, 92, 104))),
     ]
 
     def __init__(self, parent=None):
@@ -33,8 +33,8 @@ class RadialMenu(QWidget):
 
         self._visible = False
         self._center = QPointF(0, 0)
-        self._inner_radius = 58
-        self._outer_radius = 125
+        self._inner_radius = 52
+        self._outer_radius = 112
         self._hover_index = -1
         self._opacity = 0.0
         self._scale = 0.0

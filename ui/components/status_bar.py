@@ -50,11 +50,14 @@ class StatusBar(QWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.setObjectName("statusBar")
         self.setFixedHeight(28)
+        # 用 id 选择器限定背景，避免 QWidget 选择器级联到所有子标签
+        # （否则每个 QLabel 都会被套上一层灰白底，在深色背景下格外突兀）
         self.setStyleSheet("""
-            QWidget {
-                background: rgba(240, 240, 240, 0.8);
-                border-top: 1px solid rgba(200, 200, 200, 0.5);
+            #statusBar {
+                background: rgba(240, 240, 240, 0.62);
+                border-top: 1px solid rgba(200, 200, 200, 0.35);
             }
         """)
 
@@ -67,7 +70,8 @@ class StatusBar(QWidget):
         layout.addWidget(self.llm_indicator)
 
         self.llm_label = QLabel("LLM")
-        self.llm_label.setStyleSheet("font-size: 10px; color: #666;")
+        self.llm_label.setStyleSheet(
+            "background: transparent; font-size: 10px; color: #666;")
         layout.addWidget(self.llm_label)
 
         # 记忆状态
@@ -75,7 +79,8 @@ class StatusBar(QWidget):
         layout.addWidget(self.memory_indicator)
 
         self.memory_label = QLabel("记忆")
-        self.memory_label.setStyleSheet("font-size: 10px; color: #666;")
+        self.memory_label.setStyleSheet(
+            "background: transparent; font-size: 10px; color: #666;")
         layout.addWidget(self.memory_label)
 
         # 工具状态
@@ -83,14 +88,16 @@ class StatusBar(QWidget):
         layout.addWidget(self.tool_indicator)
 
         self.tool_label = QLabel("工具")
-        self.tool_label.setStyleSheet("font-size: 10px; color: #666;")
+        self.tool_label.setStyleSheet(
+            "background: transparent; font-size: 10px; color: #666;")
         layout.addWidget(self.tool_label)
 
         layout.addStretch()
 
         # 状态文本
         self.status_text = QLabel("就绪")
-        self.status_text.setStyleSheet("font-size: 10px; color: #888;")
+        self.status_text.setStyleSheet(
+            "background: transparent; font-size: 10px; color: #888;")
         layout.addWidget(self.status_text)
 
     def set_llm_status(self, status: str, text: str = ""):

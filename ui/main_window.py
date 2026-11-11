@@ -72,14 +72,15 @@ class MainWindow(QMainWindow):
         self.input_box.setGeometry(8, 440, 334, 32)
         self.input_box.setStyleSheet("""
             QLineEdit {
-                background: rgba(255,255,255,0.9);
-                border: 1px solid rgba(186,85,211,0.3);
+                background: rgba(255,255,255,0.72);
+                border: 1px solid rgba(186,85,211,0.35);
                 border-radius: 8px;
                 padding: 4px 8px;
                 font-size: 13px;
                 color: #333;
             }
             QLineEdit:focus {
+                background: rgba(255,255,255,0.9);
                 border: 1px solid rgba(186,85,211,0.6);
             }
         """)
