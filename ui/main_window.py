@@ -8,7 +8,7 @@ from PyQt6.QtWidgets import (
     QMessageBox, QVBoxLayout, QHBoxLayout, QWidget, QTextEdit, QLineEdit, QPushButton
 )
 from PyQt6.QtOpenGLWidgets import QOpenGLWidget
-from PyQt6.QtCore import Qt, QTimer, QPoint, QPointF
+from PyQt6.QtCore import Qt, QTimer, QPoint, QPointF, pyqtSignal
 from PyQt6.QtGui import QIcon, QAction, QPixmap, QPainter, QColor, QPen, QFont
 from OpenGL.GL import *
 import live2d.v3 as live2d
@@ -32,6 +32,9 @@ log = get_logger("ui")
 
 class MainWindow(QMainWindow):
     """主窗口 - 子衿桌面伴生代理"""
+
+    # 工具确认请求：工作线程 emit，主线程弹框（Qt 信号天然跨线程排队）
+    _confirm_requested = pyqtSignal(str, dict)
 
     def __init__(self, agent, model_path: str):
         super().__init__()
@@ -105,6 +108,10 @@ class MainWindow(QMainWindow):
         # TTS 口型同步事件
         bus.on("tts_start", self._on_tts_start)
         bus.on("tts_end", self._on_tts_end)
+
+        # 危险工具确认：工具在后台线程触发，必须投递回主线程弹框
+        self._confirm_requested.connect(self._on_tool_confirm_requested)
+        bus.on("tool_confirm_required", self._relay_confirm_request)
 
         self._setup_tray()
 
@@ -219,6 +226,31 @@ class MainWindow(QMainWindow):
     def _on_tts_start(self):
         """TTS 开始播放 - 启动口型同步"""
         self.live2d.start_lip_sync()
+
+    # === 危险工具确认 ===
+
+    def _relay_confirm_request(self, name: str, args: dict):
+        """在工作线程被调用：只做跨线程投递，不直接碰界面"""
+        self._confirm_requested.emit(name, args)
+
+    def _on_tool_confirm_requested(self, name: str, args: dict):
+        """在主线程弹出确认框，并把结果回投给工具执行器"""
+        detail = "、".join(f"{k}={v}" for k, v in args.items()) if args else "无参数"
+
+        if not self.isVisible():
+            self.show()
+            self.raise_()
+
+        answer = QMessageBox.question(
+            self,
+            "需要确认",
+            f"子衿请求执行工具「{name}」\n\n参数：{detail}\n\n是否允许？",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+        allowed = answer == QMessageBox.StandardButton.Yes
+        log.info("用户确认工具 %s: %s", name, allowed)
+        self.agent.tool_executor.resolve_confirmation(allowed)
 
     def _on_tts_end(self):
         """TTS 播放结束 - 停止口型同步"""

@@ -74,8 +74,17 @@ def open_application(app_name: str) -> str:
 )
 def close_application(process_name: str) -> str:
     try:
-        subprocess.run(["taskkill", "/F", "/IM", process_name], capture_output=True)
-        return f"已关闭: {process_name}"
+        result = subprocess.run(
+            ["taskkill", "/F", "/IM", process_name],
+            capture_output=True, text=True,
+            encoding="gbk", errors="ignore",  # Windows 控制台输出为 GBK
+        )
+        if result.returncode == 0:
+            return f"已关闭: {process_name}"
+        # 进程不存在或权限不足时 taskkill 返回非 0，不能谎报成功
+        detail = (result.stderr or result.stdout or "").strip().splitlines()
+        reason = detail[0] if detail else f"退出码 {result.returncode}"
+        return f"未能关闭 {process_name}：{reason}"
     except Exception as e:
         return f"关闭失败: {e}"
 

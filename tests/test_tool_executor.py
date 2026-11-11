@@ -2,6 +2,7 @@
 import sys
 import os
 import json
+import threading
 from unittest.mock import patch, MagicMock
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -78,6 +79,7 @@ def test_blocked_by_safety():
 
 
 def test_needs_confirmation():
+    """需要确认的工具：用户取消时不执行"""
     executor = ToolExecutor()
     mock_response = {
         "function": {"name": "close_application", "arguments": '{"process_name": "notepad.exe"}'},
@@ -92,12 +94,41 @@ def test_needs_confirmation():
         mock_rl.check.return_value = (True, "")
         mock_nc.return_value = True
 
+        # 确认改为同步等待，模拟界面 50ms 后投递"取消"
+        threading.Timer(0.05, lambda: executor.resolve_confirmation(False)).start()
+
         messages = []
         calls, results = executor.execute_calls([mock_response], messages)
 
-        assert "确认" in results[0]["result"]
-        assert executor.pending_confirm is not None
+        assert "取消" in results[0]["result"]
+        assert executor.pending_confirm is None
         mock_reg.execute.assert_not_called()
+
+
+def test_confirmed_tool_executes():
+    """需要确认的工具：用户允许后正常执行"""
+    executor = ToolExecutor()
+    mock_response = {
+        "function": {"name": "close_application", "arguments": '{"process_name": "notepad.exe"}'},
+        "id": "call_1"
+    }
+
+    with patch("core.tool_executor.registry") as mock_reg, \
+         patch("core.tool_executor.rate_limiter") as mock_rl, \
+         patch("core.tool_executor.needs_confirmation") as mock_nc, \
+         patch("core.tool_executor.audit"):
+        mock_reg.get_safety.return_value = "dangerous"
+        mock_rl.check.return_value = (True, "")
+        mock_nc.return_value = True
+        mock_reg.execute.return_value = "done"
+
+        threading.Timer(0.05, lambda: executor.resolve_confirmation(True)).start()
+
+        messages = []
+        calls, results = executor.execute_calls([mock_response], messages)
+
+        assert results[0]["result"] == "done"
+        mock_reg.execute.assert_called_once()
 
 
 def test_confirm_pending():

@@ -6,10 +6,10 @@
 
 ![Python](https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white)
 ![PyQt6](https://img.shields.io/badge/PyQt6-6.6+-41CD52?logo=qt&logoColor=white)
-![Version](https://img.shields.io/badge/version-0.2.0-orange)
+![Version](https://img.shields.io/badge/version-0.2.1-orange)
 ![License](https://img.shields.io/badge/License-MIT-yellow.svg)
 
-> **状态：早期开发（0.2.0）**。核心能力已可用，但仍有若干待接线项，详见 [已知限制](#已知限制) 与 [CHANGELOG](CHANGELOG.md)。
+> **状态：早期开发（0.2.1）**。核心能力已可用，但仍有若干待接线项，详见 [已知限制](#已知限制) 与 [CHANGELOG](CHANGELOG.md)。
 
 ---
 
@@ -202,7 +202,6 @@ pytest -m integration
 
 ## 已知限制
 
-- **危险操作确认未接线**：`open_application`、`close_application`、`click_position`、`search_file`、`clear_memos`、`clear_todos` 六个工具已声明 `required_confirm`，执行器会挂起等待确认，但当前界面尚未提供确认弹窗，因此这六个工具暂不可用。接线点在 `ui/main_window.py` 订阅 `tool_confirm_required` 事件。
 - **嵌入模型需联网首次下载**：离线环境下长期记忆降级为「不写不检索」，短期记忆与对话不受影响。
 - **设置面板尚未生效**：`ui/widgets/settings_widget.py` 写入 `data/settings.json`，但配置中心仍只读环境变量，改动需重启并以环境变量注入。
 - **Live2D SDK 限制**：Python 版不支持 `HitTest` 与 `SetFocus`，视线追踪需通过 `LAppModel` 实现。
